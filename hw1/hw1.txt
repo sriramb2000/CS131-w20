@@ -1,0 +1,35 @@
+Homework 1 Report
+
+The subset function was implemented fairly simply utilizing a recursive
+matching function and the List.mem function.
+
+The equal_sets function utilizes the fact that 2 sets are equal if they are
+both subsets of one another.
+
+The set_intersection function is implemented similarly to the subset function, building out a set using recursive matching.
+
+The set_difference function is implemented exactly the same as set_intersection, with the List.mem conditional flipped.
+
+The set_union function was implemented as follows: a @ (set_diff a b). This ensures uniqueness as well (except for duplicate elements within a).
+
+The computed_fixed_point function was simply implemented as a trivial recursive matching function.
+
+The filter_reachable function was quite challenging. The spec hinted at
+using the equal_sets and computed_fixed_point functions. This led me to
+think about a somewhat recursive approach. Determining the unreachable set
+of rules can be thought of as follows: Find all reachable rules from the
+given starting symbol, then perform the set_intersection on that reachable
+set and the overall set of rules.
+
+Now comes the problem of finding all the reachable rules. I broke this up
+into some subfunctions.
+     1) filter_symbol -> A function that returns all rules with a LHS matching a given symbol
+     2) expand_rhs -> A function that takes the RHS of a rule and builds all rules that can be reached from that rule
+     3) expand_set -> A function that, given a starting set of rules, will expand all the rules in the set.
+
+Once we have these building blocks, we can build the reachable set as
+follows: Call computed_fixed_point passing in equal_sets as the predicate,
+expand_set as the function, and (filter_symbol start_symbol) as the initial
+input. The idea is to continue to expand the set of reachable rules until
+it cannot be further expanded (meaning we have fully traversed the reachable
+rules) and it will pass the equal_sets predicate.
