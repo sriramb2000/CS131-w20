@@ -1,0 +1,48 @@
+To preface, I worked together with Steve Jiang, Matthew Wang, and Nikhil
+Malhotra to help understand and write pseudocode to solve these problems.
+
+In order to tackle the make_parser problem, first what I did was copy all
+of the functions I had written for make_matcher and then modified one line
+so that instead of returning a suffix as make_matcher's resulting curried
+function would, it returned a list of rules traversed in order to parse 
+the fragment in the form of a preorder traversal of the parse tree. I then
+had to write an entirely separate set of functions to take this preorder 
+traversal and convert it into a parse_tree. I came to the conclusion that
+the set of functions needed to deserialize the preorder traversal was 
+unavoidable.
+
+However, there was heavy overlap in the functions used to create the preorder
+traversal and the functions used in make_matcher. So after a little 
+experimenting, I decided to pass in a lambda function into my matcher 
+functions, one that would determine what course of action to take after a
+successful rule match. For make_matcher, the lamda function I passed into the
+matcher functions was (fun suf rule -> Some suf), since matcher only cared
+about the suffix, not the rule used to reach that suffix. For make_parser
+I used the lambda function (fun suf rule -> Some (rule::suf)), to create a 
+preorder traversal list of the rules used. 
+
+I also directly used make_matcher in my make_parser function in order to first
+check if it was possible to completely parse the fragment before proceeding to
+attempt to parse it. When calling the function returned by make_matcher,
+I simply passed in an acceptor that would accept all (fun x -> Some x).
+
+I should also quickly note my approach to deserializing the tree. The basic
+idea is to start at the front of the preorder list, and then within that rule,
+consume as many of the subsequent elements of the preorder list as needed in order
+to reach the appropriate Leaf for that symbol. Then, using the unconsumed portion
+of the preorder list returned by the deserialize_symbol function, we then process
+the next symbol in the top level rule, and so on and so forth. Since we'll only
+only serialize/deserialize the parse_tree if it is possible to completely parse 
+the fragment, we can guarantee that the entire preorder list will be consumed.
+To complete this approach, within make_parser we do some auxiliary processing, by
+declaring [N start] (where start is the starting symbol of the grammar) as the
+first rule to deserialize, thereby ensuring that 'start' is the root of the 
+parse tree.
+
+As noted by numerous students on Piazza, this matcher/parser implementation
+is not capable of dealing with Left-recursive rules. This is because we would
+end up in an infinite recursion of attempting to Left-Expand rules in hopes of 
+reaching a terminal, but due to the left-recursive nature of a rule, this would
+never happen. One could potentially hard-code some sort of check for this type 
+of left-recursion, but I believe that that is out of the scope for the basic
+implementation of matcher.
