@@ -7,6 +7,10 @@ class AcmeSafeState implements State {
 
     public int size() { return value.length(); }
 
+    /**
+     * This function is not thread safe. However, since it gets called
+     * after the thread work, it will not affect the results.
+    **/
     public long[] current() {
 	long[] tmp = new long[this.size()];
 	for (int i = 0; i < this.size(); ++i){
