@@ -12,7 +12,7 @@ classes = ["Synchronized", "Unsynchronized", "AcmeSafe"]
 states = [5, 50, 100]
 threads = [1, 8, 20, 40]
 
-print("echo \"Type, State, #Threads, Swap Avg Real (ns), Swap Avg CPU (ns)\" > " + OUTPUT_FILE)
+print("echo \"Type, State, #Threads, Swap Avg Real (ns), Swap Avg CPU (ns), Mismatch\" > " + OUTPUT_FILE)
 
 for c in classes:
     for s in states:
