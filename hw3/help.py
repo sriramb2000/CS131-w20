@@ -1,6 +1,6 @@
 import sys
 
-OUTPUT_FILE = "res.txt"
+OUTPUT_FILE = "data.csv"
 
 if(len(sys.argv) == 2):
     OUTPUT_FILE = sys.argv[1]
@@ -19,5 +19,5 @@ for c in classes:
         for t in threads:
             tmp = c + ", " + str(s) + ", " + str(t) + ", "
             print("echo -n \"" + tmp + "\" >> " + OUTPUT_FILE)
-            print("time timeout 3600 java UnsafeMemory "+ c + " " + str(t) + " 100000000 " + str(s) + " | awk 'NR==2' >> " + OUTPUT_FILE)
+            print("time timeout 3600 java UnsafeMemoryTest "+ c + " " + str(t) + " 100000000 " + str(s) + " | awk 'NR==2' >> " + OUTPUT_FILE)
         

@@ -66,8 +66,7 @@ class UnsafeMemory {
 	double dTransitions = nTransitions;
 	System.out.format("Total time %g s real, %g s CPU\n",
 			  realtime / 1e9, cputime / 1e9);
-	//	System.out.format("Average swap time %g ns real, %g ns CPU\n",
-	System.out.format("%g, %g\n",
+	System.out.format("Average swap time %g ns real, %g ns CPU\n",
 			  realtime / dTransitions * nThreads,
 			  cputime / dTransitions);
     }
