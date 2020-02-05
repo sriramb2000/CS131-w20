@@ -1,4 +1,5 @@
-OUT=results.txt
+OUT=results.csv
+FILES=AcmeSafeState.java NullState.java State.java SwapTest.java SynchronizedState.java UnsafeMemory.java UnsynchronizedState.java
 
 default:
 	javac *.java
@@ -14,4 +15,4 @@ clean:
 	rm -rf *~
 
 dist:
-	jar cvf jmmplus.jar *.java
+	jar cvf jmmplus.jar $(FILES)
