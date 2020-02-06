@@ -6,4 +6,10 @@ class NullState implements State {
     public int size() { return value.length; }
     public long[] current() { return value; }
     public void swap(int i, int j) { }
+    public long sum() {
+	long osum = 0;
+	for (int i = 0; i < value.length; ++i)
+	    osum += value[i];
+	return osum;
+    }
 }

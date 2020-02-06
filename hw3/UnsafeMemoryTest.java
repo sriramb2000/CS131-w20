@@ -20,7 +20,7 @@ class UnsafeMemoryTest {
 	    else
 		throw new Exception(args[0]);
 	    double[] avgs = dowork(nThreads, nTransitions, s);
-	    test(s.current(), avgs);
+	    test(s, avgs);
 	    System.exit (0);
 	} catch (Exception e) {
 	    usage(e);
@@ -74,10 +74,8 @@ class UnsafeMemoryTest {
 	return avgs;
     }
 
-    private static void test(long[] output, double[] avgs) {
-	long osum = 0;
-	for (var i = 0; i < output.length; i++)
-	    osum += output[i];
+    private static void test(State output, double[] avgs) {
+	long osum = output.sum();
 	System.out.format("%g, %g, %d\n",
 			  avgs[0],
 			  avgs[1],

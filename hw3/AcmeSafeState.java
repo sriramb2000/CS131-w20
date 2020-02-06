@@ -13,7 +13,7 @@ class AcmeSafeState implements State {
     **/
     public long[] current() {
 	long[] tmp = new long[this.size()];
-	for (int i = 0; i < this.size(); ++i){
+	for (int i = 0; i < tmp.length; ++i){
 	    tmp[i] = this.value.get(i);
 	}
 	return tmp;
@@ -23,4 +23,12 @@ class AcmeSafeState implements State {
 	value.getAndDecrement(i);
 	value.getAndIncrement(j);
     }
+
+    public long sum() {
+        long osum = 0;
+        for (int i = 0; i < value.length(); ++i)
+            osum += value.get(i);
+        return osum;
+    }
+
 }

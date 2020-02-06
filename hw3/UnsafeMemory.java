@@ -20,7 +20,7 @@ class UnsafeMemory {
 	    else
 		throw new Exception(args[0]);
 	    dowork(nThreads, nTransitions, s);
-	    test(s.current());
+	    test(s);
 	    System.exit (0);
 	} catch (Exception e) {
 	    usage(e);
@@ -71,10 +71,8 @@ class UnsafeMemory {
 			  cputime / dTransitions);
     }
 
-    private static void test(long[] output) {
-	long osum = 0;
-	for (var i = 0; i < output.length; i++)
-	    osum += output[i];
+    private static void test(State output) {
+	long osum = output.sum();
 	if (osum != 0)
 	    error("output sum mismatch", osum, 0);
     }

@@ -11,4 +11,12 @@ class UnsynchronizedState implements State {
 	value[i]--;
 	value[j]++;
     }
+
+    public long sum() {
+	long osum = 0;
+	for (int i = 0; i < value.length; ++i)
+	    osum += value[i];
+	return osum;
+    }
+    
 }
