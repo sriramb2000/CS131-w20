@@ -17,11 +17,38 @@ import argparse
 import json
 import time
 import aiohttp
+import logging
 
 # from config import PORT_NUMBERS, PORT_NUMBERS, LINKS
 import config
-import echo_client
 import keys
+
+class Client:
+    def __init__(self, port=8888, ip='127.0.0.1', name='client', message_max_length=1e6):
+        """
+        127.0.0.1 is the localhost
+        port could be any port
+        """
+        self.ip = ip
+        self.port = port
+        self.name = name
+        self.message_max_length = int(message_max_length)
+
+    async def tcp_echo_client(self, message, server_name):
+        """
+        on client side send the message for echo
+        """
+        reader, writer = await asyncio.open_connection(self.ip, self.port)
+        logging.info(f'Connection to {server_name} opened\n')
+        writer.write(message.encode())
+        logging.info(f'Sending {message} to {server_name}\n')
+        data = await reader.read(self.message_max_length)
+        logging.info(f'Connection to {server_name} closed\n\n')
+
+        # The following lines closes the stream properly
+        # If there is any warning, it's due to a bug o Python 3.8: https://bugs.python.org/issue38529
+        # Please ignore it
+        writer.close()
 
 def getLatLon(latlon):
 	ind = 0
@@ -49,24 +76,14 @@ async def fetch(session, url):
 class ServerMessage:
     history = dict()
 
-    def __init__(self, server_name, logfile):
+    def __init__(self, server_name):
         self.server_name = server_name
         self.known_command = ["WHATSAT", "IAMAT", "AT"]
         self.links = config.LINKS[server_name]
-        self.logfile = logfile
         print(self.links)
 
     def __call__(self, message):
         return self.parse_message(message) if len(message) else "ERROR: empty message"
-
-    async def log(self, message):
-        if message == None:
-            return
-        else:
-            try:
-                self.logfile.write(message)
-            except:
-                print("Log Error: ", message)
 
     async def parse_message(self, message):
         command_table = {
@@ -77,7 +94,7 @@ class ServerMessage:
         message_list = [msg for msg in message.strip().split() if len(msg)]
         if len(message_list) != 4 and message_list[0] != "UPDATE":
             log("ERROR invalid command: " + message)
-            return "ERROR: invalid command length"
+            return "ERROR: invalid command"
         cmd = command_table.get(message_list[0], lambda x, y, z: f"ERROR: command name {message_list[0]} unrecognized")
         if message_list[0] == "UPDATE":
             res = await cmd(message.strip()[len("UPDATE"):])
@@ -91,41 +108,37 @@ class ServerMessage:
         if td < 0:
             sign = ""
         msg = f"AT {self.server_name} {sign}{td} {client_id} {coords} {ts}"
-        ServerMessage.history[client_id] = {"server": self.server_name, "client": client_id, "coordinates": coords, "timestamp": ts, "delta": td, "delta_sign": sign, "message": msg}
+        ServerMessage.history[client_id] = {"server": self.server_name, "client": client_id, "coordinates": coords, "timestamp": ts, "delta": td, "message": msg}
         print(json.dumps(ServerMessage.history[client_id]))
         await self.flood(self.server_name, json.dumps(ServerMessage.history[client_id]))
-        await self.log("IAMAT response:\n" + msg + "\n\n")
+        logging.info("IAMAT response:\n" + msg + "\n\n")
         return msg
 
     async def handle_whats_at(self, client_id, radius, max_results):
         if client_id in ServerMessage.history:
             url = create_places_req(ServerMessage.history[client_id]["coordinates"], float(radius))
             async with aiohttp.ClientSession() as session:
-                await self.log(f'QUERYING PLACES API FOR LOCATION={ServerMessage.history[client_id]["coordinates"]}, RADIUS={radius}\n\n')
+                logging.info(f'QUERYING PLACES API FOR LOCATION={ServerMessage.history[client_id]["coordinates"]}, RADIUS={radius}\n\n')
                 res = await fetch(session, url)
                 #print(res)
                 res["results"] = res["results"][:int(max_results)]
                 google_api_feedback = json.dumps(res, indent=4)
                 print(res)
                 msg = ServerMessage.history[client_id]["message"] + "\n" + google_api_feedback
-                await self.log("WHATSAT response:\n" + msg[:200] + "\n...\n\n")
+                logging.info("WHATSAT response:\n" + msg[:200] + "\n...\n\n")
                 return msg
-        await self.log("AT? invalid client")
+        logging.info("AT? invalid client")
         return "AT? Invalid client"
     
     async def handle_update(self, entry):
         print(entry)
         data = json.loads(entry)
         if not data["client"] in ServerMessage.history or float(data["timestamp"]) > float(ServerMessage.history[data["client"]]["timestamp"]):
-            old = data.copy()
             server_origin = data["server"]
-            msg = data["message"].replace(server_origin, self.server_name)
-            data["message"] = msg
-            data["server"] = self.server_name
             ServerMessage.history[data["client"]] = data
-            await self.log("UPDATE processed:\n" + json.dumps(data) + "\n\n")
-            return (server_origin, json.dumps(old))
-        self.log("UPDATE redundant\n\n")
+            logging.info("UPDATE processed:\n" + json.dumps(data) + "\n\n")
+            return (server_origin, json.dumps(data))
+        logging.info("UPDATE redundant\n\n")
         return ("", "")
     
     async def flood(self, origin, message):
@@ -133,8 +146,13 @@ class ServerMessage:
             temp = self.links.copy()
             if origin in temp:
                 temp.remove(origin)
-                print(origin, temp)
-            return asyncio.gather(*(echo_client.Client(config.PORT_NUMBERS[link]).tcp_echo_client('UPDATE ' + message, link, self.log) for link in temp))
+            for link in temp:
+                try:
+                    await Client(config.PORT_NUMBERS[link]).tcp_echo_client('UPDATE ' + message, link)
+                except:
+                    logging.error(f"Failed to push UPDATE from {self.server_name} to {link}\n\n")
+
+            # return asyncio.gather(*( for link in temp))
 
 
 class Server:
@@ -145,8 +163,8 @@ class Server:
         self.ip = ip
         self.port = port
         self.message_max_length = int(message_max_length)
-        self.logfile = open(name+"-log.txt", "a+")
-        self.msg_handler = ServerMessage(name, self.logfile)
+        logging.basicConfig(filename=f'{name}-log.txt', level=logging.INFO)
+        self.msg_handler = ServerMessage(name)
 
     # This is going to be handle_message
     async def handle_message(self, reader, writer):
@@ -177,14 +195,14 @@ class Server:
     async def run_forever(self):
         server = await asyncio.start_server(self.handle_message, self.ip, self.port)
 
-        self.logfile.write(f"Starting up {self.name} at {time.time()}\n\n")
+        logging.info(f"Starting up {self.name} at {time.time()}\n\n")
 
         # Serve requests until Ctrl+C is pressed
         print(f'serving on {server.sockets[0].getsockname()}')
         async with server:
             await server.serve_forever()
         
-        self.logfile.write(f"Shutting down {self.name} at {time.time()}\n\n")
+        logging.info(f"Shutting down {self.name} at {time.time()}\n\n")
         # Close the server
         server.close()
 
@@ -201,7 +219,7 @@ def main():
     try:
         asyncio.run(server.run_forever())
     except KeyboardInterrupt:
-        pass
+        logging.info(f"Shutting down {args.server_name} at {time.time()}\n\n")
 
 
 if __name__ == '__main__':

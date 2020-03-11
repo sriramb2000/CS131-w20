@@ -4,7 +4,6 @@ PORT_NUMBERS = {
     "Smith": 11862,
     "Campbell": 11863,
     "Singleton": 11864,
-    "hello": 8888,
 }
 
 TEST_PORT_NUMBERS = {
@@ -17,10 +16,9 @@ TEST_PORT_NUMBERS = {
 }
 
 LINKS = {
-    "Hill": ["Jaquez", "Smith"], #must update
+    "Hill": ["Jaquez", "Smith"],
     "Jaquez": ["Hill", "Singleton"],
     "Smith": ["Hill", "Singleton", "Campbell"],
     "Campbell": ["Singleton", "Smith"],
     "Singleton": ["Jaquez", "Smith", "Campbell"],
-    "hello": ["Hill"]
 }

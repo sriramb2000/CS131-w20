@@ -20,7 +20,7 @@ async def logger(x):
 
 
 class Client:
-    def __init__(self, port=8888, ip='127.0.0.1', name='client', message_max_length=1e6):
+    def __init__(self, port=8888, ip='127.0.0.1', name='client', message_max_length=1e6, logging=True):
         """
         127.0.0.1 is the localhost
         port could be any port
@@ -28,18 +28,22 @@ class Client:
         self.ip = ip
         self.port = port
         self.name = name
+        self.logging = logging
         self.message_max_length = int(message_max_length)
 
-    async def tcp_echo_client(self, message, server_name, log):
+    async def tcp_echo_client(self, message, server_name):
         """
         on client side send the message for echo
         """
         reader, writer = await asyncio.open_connection(self.ip, self.port)
-        await log(f'Connection to {server_name} opened\n')
+        if self.logging:
+            logging.info(f'Connection to {server_name} opened\n')
         writer.write(message.encode())
-        await log(f'Sending {message} to {server_name}\n')
+        if self.logging:
+            logging.info(f'Sending {message} to {server_name}\n')
         data = await reader.read(self.message_max_length)
-        await log(f'Connection to {server_name} closed\n\n')
+        if self.logging:
+            logging.info(f'Connection to {server_name} closed\n\n')
 
         # The following lines closes the stream properly
         # If there is any warning, it's due to a bug o Python 3.8: https://bugs.python.org/issue38529
@@ -54,7 +58,7 @@ class Client:
             if message in ['quit', 'exit', ':q', 'exit;', 'quit;', 'exit()', '(exit)']:
                 break
             else:
-                asyncio.run(self.tcp_echo_client(message, '', logger))
+                asyncio.run(self.tcp_echo_client(message, ''))
 
 
 if __name__ == '__main__':
@@ -63,5 +67,5 @@ if __name__ == '__main__':
                         help='required port number input')
     args = parser.parse_args()
     print(time.time())
-    client = Client(args.port_no)  # using the default settings
+    client = Client(args.port_no, logging=False)  # using the default settings
     client.run_until_quit()
